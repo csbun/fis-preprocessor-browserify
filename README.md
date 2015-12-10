@@ -20,7 +20,18 @@ fis.config.set('settings.preprocessor.browserify', {
 ### fis2
 
 ```javascript
-fis.config.set('modules.preprocessor', 'browserify');
+fis.config.set('modules.preprocessor.js', 'browserify');
+fis.config.set('roadmap.path', [
+    {
+        // entry js
+        reg: 'views/**/*.js',
+        // `isLayout` should be `TRUE`
+        isLayout: true
+    }, {
+        // other js `isLayout` != `TRUE`
+        reg: '**/*.js'
+    }
+]);
 ```
 
 ### fis3

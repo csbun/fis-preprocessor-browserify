@@ -1,6 +1,6 @@
 {
   "name": "fis-preprocessor-browserify",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A browserify preprocessor for fis",
   "main": "index.js",
   "scripts": {

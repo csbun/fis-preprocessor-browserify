@@ -6,6 +6,7 @@ var debowerify = require('debowerify');
 
 var urify = require('./urify');
 var stringify = require('./stringify');
+var isFis3 = require('./version').isFis3;
 
 module.exports = function (file, browserifyOpts) {
     var content = '';
@@ -15,7 +16,7 @@ module.exports = function (file, browserifyOpts) {
     browserify(file.realpath, browserifyOpts || {})
         .transform(stringify(['.tpl', '.html'], file.dirname)) // 支持 require(tpl/html)
         .transform(debowerify) // 支持 bower
-        .transform(urify) // 支持 fis 的 __uri() 资源定位
+        .transform(urify(file.realpath)) // 支持 fis 的 __uri() 资源定位
         .on('file', function (depFilePath) {
             // find dependences
             if (depFilePath !== file.realpath) {
@@ -36,7 +37,8 @@ module.exports = function (file, browserifyOpts) {
     deasync.loopWhile(function (){
         return !isDone;
     });
-    // // 替换 `require` 为 `rq`，确保不要被 fis 重定位 require 文件
-    // return content.replace(/\brequire\b/g, 'rq');
-    return content;
+    // return
+    // fis3 不会处理 `require`
+    // fis2 替换 `require` 为 `rq`，确保不要被 fis2 重定位 require 文件
+    return isFis3 ? content : content.replace(/\brequire\b/g, 'rq');
 };

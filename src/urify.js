@@ -1,41 +1,36 @@
 'use strict';
 
-var fisCompileSettings = (fis.compile || '').settings || {};
-var URI_REG = /\b__uri\(\s*('|")([^'"]+)\1\s*\)/g;
-
+var URI_REG = /\b(__uri)\(\s*('|")([^'"]+)\2\s*\)/g;      
 
 var path = require('path');
 var through = require('through');
 
-
 /**
  * Browserify transform
- * change `__uri('xxx')` to real path
- * @param  {string} file [description]
+ * change `__uri('path')` to relative path from sourceFilePath
  */
-module.exports = function (inputFileRealPath) {
-    var chunks = [];
+module.exports = function (sourceFilePath) {
+    return function (inputFileRealPath) {
+        var chunks = [];
 
-    var onwrite = function (buffer) {
-      chunks.push(buffer);
+        var onwrite = function (buffer) {
+          chunks.push(buffer);
+        };
+
+        var onend = function () {
+            var contents = Buffer.concat(chunks)
+                .toString('utf8')
+                .replace(URI_REG, function (match, uriFn, quotmark, depFileName) {
+                    // 转换 __uri(当前文件相对路径) 为 入口文件的相对路径
+                    var depFileRealPath = path.resolve(path.dirname(inputFileRealPath), depFileName);
+                    var depFileRelativePath = path.relative(path.dirname(sourceFilePath), depFileRealPath)
+                                                .replace(/\\/g, '/');
+                    return uriFn + '(' + quotmark + depFileRelativePath + quotmark + ')';
+                });
+          this.queue(contents);
+          this.queue(null);
+        };
+
+        return through(onwrite, onend);
     };
-
-    var onend = function () {
-        var contents = Buffer.concat(chunks)
-            .toString('utf8')
-            .replace(URI_REG, function (match, quotmark, depFileName) {
-                var depFile = fis.uri(depFileName, path.dirname(inputFileRealPath));
-                if (depFile && depFile.file) {
-                    var url = depFile.file.getUrl(fisCompileSettings.hash, fisCompileSettings.domain);
-                    return quotmark + url + quotmark;
-                } else {
-                    console.error('\n' + depFileName + ' NOT found from ' + inputFileRealPath);
-                    return match;
-                }
-            });
-      this.queue(contents);
-      this.queue(null);
-    };
-
-    return through(onwrite, onend);
 };
